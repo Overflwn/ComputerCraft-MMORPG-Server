@@ -1,0 +1,277 @@
+--test server
+msgs = {
+	"ping",
+	"true",
+	"username",
+	"exists",
+	"new",
+	"wrong pw",
+	"deleteacc",
+	"changepw",
+	"getplayerdata",
+	"spawnplayer",
+	"getworlddata",
+	"uploadplayerdata"
+}
+
+users = {
+	
+}
+
+playerData = {
+	users = {
+
+	},
+	inventory = {
+
+	},
+	worlds = {
+
+	},
+	posX = {
+
+	},
+	posY = {
+
+	}
+}
+z = 0
+
+rednet.open("top")
+
+while true do
+	id, msg, msg2 = rednet.receive()
+	if msg == msgs[1] then
+		print("Received ping from "..tostring(id)..", sending success.")
+		rednet.send(id, msgs[2])
+		print("Success sent.")
+	elseif msg == msgs[3] then
+		print("Received Username: "..msg2.." from "..tostring(id)..", searching user...")
+		local file = fs.open("/server/users.list", "r")
+		local found = false
+		users = file.readAll()
+		users = textutils.unserialize(users)
+		file.close()
+		for _, user in ipairs(users) do
+			if msg2 == user then
+				print("User found, sending success.")
+				rednet.send(id, msgs[4])
+				found = true
+				break
+			else
+				found = false
+			end
+		end
+		if found == false then
+			print("User not found, sending register.")
+			rednet.send(id, msgs[5])
+		end
+	elseif msg == msgs[5] then
+		usrData = textutils.unserialize(msg2)
+		pData = {
+			inventory = {
+
+			},
+			world = "house1",
+			x = 2,
+			y = 2
+		}
+		print("Register ("..tostring(id).."): "..usrData.name..".")
+		print("Writing to files...")
+		local file = fs.open("/server/users.list","r")
+		users = file.readAll()
+		users = textutils.unserialize(users)
+		file.close()
+		local file = fs.open("/server/users.list","w")
+		table.insert(users, usrData.name)
+		file.write(textutils.serialize(users))
+		file.close()
+		local file = fs.open("/server/pws.list","r")
+		pws = file.readAll()
+		pws = textutils.unserialize(pws)
+		file.close()
+		local file = fs.open("/server/pws.list","w")
+		table.insert(pws, usrData.encpw)
+		file.write(textutils.serialize(pws))
+		file.close()
+		fs.makeDir("/server/saves/"..usrData.name.."")
+		local file = fs.open("/server/saves/"..usrData.name.."/data","w")
+		file.write(textutils.serialize(pData))
+		file.close()
+		print("Complete, sending success.")
+		rednet.send(id, msgs[2])
+	elseif msg == msgs[4] then
+		usrData = textutils.unserialize(msg2)
+		print("Login ("..tostring(id).."): "..usrData.name..".")
+		print("Checking password....")
+		local file = fs.open("/server/users.list","r")
+		users = file.readAll()
+		users = textutils.unserialize(users)
+		file.close()
+		local file = fs.open("/server/pws.list","r")
+		pws = file.readAll()
+		pws = textutils.unserialize(pws)
+		file.close()
+		local usrnmbr = 0
+		for _, usr in ipairs(users) do
+			if usr == usrData.name then
+				usrnmbr = _
+				break
+			end
+		end
+		if usrData.encpw == pws[usrnmbr] then
+			print("Password correct, sending success.")
+			rednet.send(id, msgs[2])
+		else
+			print("Password incorrect, sending failure.")
+			rednet.send(id, msgs[6])
+		end
+	elseif msg == msgs[7] then
+		usrData = textutils.unserialize(msg2)
+		print(tostring(id).." requested deletion of "..usrData.name)
+		print("Checking password...")
+		local file = fs.open("/server/users.list","r")
+		users = file.readAll()
+		users = textutils.unserialize(users)
+		file.close()
+		local file = fs.open("/server/pws.list","r")
+		pws = file.readAll()
+		pws = textutils.unserialize(pws)
+		file.close()
+		local usrnmbr = 0
+		for _, usr in ipairs(users) do
+			if usr == usrData.name then
+				usrnmbr = _
+				break
+			end
+		end
+		if usrData.encpw == pws[usrnmbr] then
+			fs.delete("/server/saves/"..users[usrnmbr])
+			table.remove(users, usrnmbr)
+			table.remove(pws, usrnmbr)
+			local file = fs.open("/server/users.list","w")
+			file.write(textutils.serialize(users))
+			file.close()
+			local file = fs.open("/server/pws.list","w")
+			file.write(textutils.serialize(pws))
+			file.close()
+			print("Password correct and removed account, sending success.")
+			rednet.send(id, msgs[2])
+		else
+			print("Password invalid, sending failure.")
+			rednet.send(id, msgs[6])
+		end
+	elseif msg == msgs[8] then
+
+		c = textutils.unserialize(msg2)
+		print(tostring(id).." requested changing password of "..c.oldData.name..".")
+		print("Checking password...")
+		local file = fs.open("/server/users.list","r")
+		users = file.readAll()
+		users = textutils.unserialize(users)
+		file.close()
+		local file = fs.open("/server/pws.list","r")
+		pws = file.readAll()
+		pws = textutils.unserialize(pws)
+		file.close()
+		local usrnmbr = 0
+		for _, usr in ipairs(users) do
+			if usr == c.newData.name and usr == c.oldData.name then
+				usrnmbr = _
+				break
+			end
+		end
+		if c.oldData.encpw == pws[usrnmbr] then
+
+			pws[usrnmbr] = c.newData.encpw
+			local file = fs.open("/server/pws.list","w")
+			file.write(textutils.serialize(pws))
+			file.close()
+			print("Password correct and changed. Sending success.")
+			rednet.send(id, msgs[2])
+		else
+			rednet.send(id, msgs[6])
+		end
+	elseif msg == msgs[10] then
+		print(tostring(id).." requested "..msg2.." spawn...")
+		local file = fs.open("/server/saves/"..msg2.."/data","r")
+		local pData = file.readAll()
+		pData = textutils.unserialize(pData)
+		file.close()
+		if playerData.users[msg2] ~= nil then
+			--[[table.remove(playerData.users, _)
+			table.remove(playerData.inventory, _)
+			table.remove(playerData.worlds, _)
+			table.remove[playerData.posX, _)
+			table.remove(playerData.posY, _)]]
+			playerData.users[msg2] = nil
+			playerData.inventory[msg2] = nil
+			playerData.worlds[msg2] = nil
+			playerData.posX[msg2] = nil
+			playerData.posY[msg2] = nil
+		end
+		--[[table.insert(playerData.users, msg2)
+		table.insert(playerData.inventory, pData.inventory)
+		table.insert(playerData.worlds, pData.world)
+		table.insert(playerData.posX, tostring(pData.x))
+		table.insert(playerData.posY, tostring(pData.y))]]
+		playerData.users[msg2] = msg2
+		playerData.inventory[msg2] = pData.inventory
+		playerData.worlds[msg2] = pData.world
+		playerData.posX[msg2] = pData.x
+		playerData.posY[msg2] = pData.y
+		print("Player inserted into world., sending success and players.")
+		rednet.send(id, msgs[2], textutils.serialize(playerData))
+	elseif msg == msgs[11] then
+		mapData = {
+			layout = "",
+			data = {
+
+			}
+		}
+		print(tostring(id).." requested map "..msg2..".")
+		local file = fs.open("/server/maps/"..msg2.."/data.lvl","r")
+		mapData.layout = file.readAll()
+		file.close()
+		local file = fs.open("/server/maps/"..msg2.."/data.lvlDat","r")
+		local inhalt = file.readAll()
+		mapData.data = textutils.unserialize(inhalt)
+		file.close()
+		rednet.send(id, msgs[2], textutils.serialize(mapData))
+	elseif msg == msgs[9] then
+		--[[z = z+1
+		print("Requested data "..tostring(z))
+		for _, usr in ipairs(playerData.users) do
+			print(usr)
+			print(tostring(playerData.posX[_]))
+			print(tostring(playerData.posY[_]))
+		end]]
+		rednet.send(id, msgs[2], textutils.serialize(playerData))
+	elseif msg == msgs[12] then
+		local changed = textutils.unserialize(msg2)
+		print("Move "..changed.changer.name)
+			--print(tostring(playerData.posX[changed.changer.name]))
+			--print(tostring(playerData.posY[changed.changer.name]))
+				playerData.posX[changed.changer.name] = changed.playerData.posX[changed.changer.name]
+				playerData.posY[changed.changer.name] = changed.playerData.posY[changed.changer.name]
+				playerData.inventory[changed.changer.name] = changed.playerData.inventory[changed.changer.name]
+				--print(usr)
+				local a = tostring(playerData.posX[changed.changer.name])
+				local b = tostring(playerData.posY[changed.changer.name])
+				local c = tostring(playerData.worlds[changed.changer.name])
+		print(tostring(id).." moved ->"..a.." "..b.." "..c)
+		u = changed.changer.name
+		local file = fs.open("/server/saves/"..u.."/data","r")
+		local inhalt = file.readAll()
+		inhalt = textutils.unserialize(inhalt)
+		file.close()
+		
+		inhalt.world = playerData.worlds[changed.changer.name]
+		inhalt.inventory = playerData.inventory[changed.changer.name]
+		inhalt.x = playerData.posX[changed.changer.name]
+		inhalt.y = playerData.posY[changed.changer.name]
+		local file = fs.open("/server/saves/"..u.."/data","w")
+		file.write(textutils.serialize(inhalt))
+		file.close()
+	end
+end
