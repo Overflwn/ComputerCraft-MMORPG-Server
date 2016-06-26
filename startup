@@ -146,7 +146,7 @@ while true do
 			end
 		end
 		if usrData.encpw == pws[usrnmbr] then
-			fs.delete("/server/saves/"..users[usrnmbr])
+			shell.run("rm /server/saves/"..usrData.name)
 			table.remove(users, usrnmbr)
 			table.remove(pws, usrnmbr)
 			local file = fs.open("/server/users.list","w")
