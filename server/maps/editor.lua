@@ -25,6 +25,9 @@ mapData = {
 	laddersY = {
 
 	},
+	ladderDestination = {
+
+	},
 	doorsX = {
 
 	},
@@ -142,11 +145,25 @@ function editor()
 					end
 				elseif selectedObj == "ladder" then
 					term.setCursorPos(x, y)
-					term.setBackgroundColor(colors.black)
+					term.setBackgroundColor(colors.brown)
 					term.setTextColor(colors.white)
-					term.write("L")
+					term.write("H")
+					term.redirect(searchBox)
+					term.setCursorPos(1,1)
+					term.clear()
+					term.write("Please write destination")
+					sleep(2)
+					term.setCursorPos(1,1)
+					term.clear()
+					repeat
+						local eingabe = limitRead(23)
+						term.setCursorPos(1,1)
+						term.clear()
+					until #eingabe > 0
+					term.redirect(oldTerm)
 					table.insert(mapData.laddersX, x)
 					table.insert(mapData.laddersY, y)
+					table.insert(mapData.ladderDestination, eingabe)
 					redrawBlocks()
 				end
 			end

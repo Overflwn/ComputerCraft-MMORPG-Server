@@ -220,23 +220,24 @@ while true do
 		playerData.worlds[msg2] = pData.world
 		playerData.posX[msg2] = pData.x
 		playerData.posY[msg2] = pData.y
-		print("Player inserted into world., sending success and players.")
+		print("Player inserted into world, sending success and players.")
 		rednet.send(id, msgs[2], textutils.serialize(playerData))
 	elseif msg == msgs[11] then
 		mapData = {
-			layout = "",
+			layout = nil,
 			data = {
 
 			}
 		}
 		print(tostring(id).." requested map "..msg2..".")
-		local file = fs.open("/server/maps/"..msg2.."/data.lvl","r")
+		local file = fs.open("/server/maps/"..msg2.."/lvl","r")
 		mapData.layout = file.readAll()
 		file.close()
 		local file = fs.open("/server/maps/"..msg2.."/data.lvlDat","r")
 		local inhalt = file.readAll()
 		mapData.data = textutils.unserialize(inhalt)
 		file.close()
+		print("Sending map")
 		rednet.send(id, msgs[2], textutils.serialize(mapData))
 	elseif msg == msgs[9] then
 		--[[z = z+1
@@ -255,6 +256,7 @@ while true do
 				playerData.posX[changed.changer.name] = changed.playerData.posX[changed.changer.name]
 				playerData.posY[changed.changer.name] = changed.playerData.posY[changed.changer.name]
 				playerData.inventory[changed.changer.name] = changed.playerData.inventory[changed.changer.name]
+				playerData.worlds[changed.changer.name] = changed.playerData.worlds[changed.changer.name]
 				--print(usr)
 				local a = tostring(playerData.posX[changed.changer.name])
 				local b = tostring(playerData.posY[changed.changer.name])
