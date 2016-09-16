@@ -11,7 +11,9 @@ msgs = {
 	"getplayerdata",
 	"spawnplayer",
 	"getworlddata",
-	"uploadplayerdata"
+	"uploadplayerdata",
+	"getChat",
+	"sendMessage"
 }
 
 users = {
@@ -275,5 +277,13 @@ while true do
 		local file = fs.open("/server/saves/"..u.."/data","w")
 		file.write(textutils.serialize(inhalt))
 		file.close()
+	elseif msg == msgs[13] then
+		local file = fs.open("/server/chat", "r")
+		local inhalt = file.readAll()
+		file.close()
+		rednet.send(id, msgs[13], inhalt)
+	elseif msg == msgs[14] then
+		print("Getting message")
+		rednet.broadcast(msg2, msgs[13])
 	end
 end
